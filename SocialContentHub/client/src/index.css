@@ -1,0 +1,198 @@
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  --background: hsl(0, 0%, 100%);
+  --foreground: hsl(222, 84%, 4.9%);
+  --muted: hsl(210, 40%, 98%);
+  --muted-foreground: hsl(215, 16%, 46.9%);
+  --popover: hsl(0, 0%, 100%);
+  --popover-foreground: hsl(222, 84%, 4.9%);
+  --card: hsl(0, 0%, 100%);
+  --card-foreground: hsl(222, 84%, 4.9%);
+  --border: hsl(214, 32%, 91.2%);
+  --input: hsl(214, 32%, 91.2%);
+  --primary: hsl(221, 83%, 53%);
+  --primary-foreground: hsl(210, 40%, 98%);
+  --secondary: hsl(210, 40%, 96%);
+  --secondary-foreground: hsl(222, 47%, 11%);
+  --accent: hsl(210, 40%, 96%);
+  --accent-foreground: hsl(222, 47%, 11%);
+  --destructive: hsl(0, 84%, 60%);
+  --destructive-foreground: hsl(210, 40%, 98%);
+  --ring: hsl(221, 83%, 53%);
+  --radius: 0.5rem;
+  
+  /* Custom colors for the SNS app */
+  --emerald-50: hsl(151, 81%, 96%);
+  --emerald-100: hsl(149, 80%, 90%);
+  --emerald-500: hsl(160, 84%, 39%);
+  --emerald-600: hsl(158, 64%, 52%);
+  --emerald-700: hsl(158, 64%, 42%);
+  
+  --purple-50: hsl(270, 100%, 98%);
+  --purple-100: hsl(269, 100%, 95%);
+  --purple-500: hsl(271, 81%, 56%);
+  --purple-600: hsl(271, 70%, 48%);
+  --purple-700: hsl(272, 72%, 41%);
+  
+  --slate-50: hsl(210, 40%, 98%);
+  --slate-100: hsl(210, 40%, 96%);
+  --slate-200: hsl(214, 32%, 91%);
+  --slate-400: hsl(215, 20%, 65%);
+  --slate-500: hsl(215, 16%, 47%);
+  --slate-600: hsl(215, 19%, 35%);
+  --slate-700: hsl(215, 25%, 27%);
+  --slate-900: hsl(222, 84%, 5%);
+  
+  --success-500: hsl(160, 84%, 39%);
+}
+
+.dark {
+  --background: hsl(222, 84%, 4.9%);
+  --foreground: hsl(210, 40%, 98%);
+  --muted: hsl(217, 32%, 17.5%);
+  --muted-foreground: hsl(215, 20%, 65%);
+  --popover: hsl(222, 84%, 4.9%);
+  --popover-foreground: hsl(210, 40%, 98%);
+  --card: hsl(222, 84%, 4.9%);
+  --card-foreground: hsl(210, 40%, 98%);
+  --border: hsl(217, 32%, 17.5%);
+  --input: hsl(217, 32%, 17.5%);
+  --primary: hsl(221, 83%, 53%);
+  --primary-foreground: hsl(222, 84%, 4.9%);
+  --secondary: hsl(217, 32%, 17.5%);
+  --secondary-foreground: hsl(210, 40%, 98%);
+  --accent: hsl(217, 32%, 17.5%);
+  --accent-foreground: hsl(210, 40%, 98%);
+  --destructive: hsl(0, 62%, 30%);
+  --destructive-foreground: hsl(210, 40%, 98%);
+  --ring: hsl(221, 83%, 53%);
+}
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+
+  body {
+    @apply font-inter antialiased bg-slate-50 text-slate-900;
+  }
+}
+
+@layer utilities {
+  .font-inter {
+    font-family: 'Inter', sans-serif;
+  }
+  
+  .bg-slate-50 {
+    background-color: var(--slate-50);
+  }
+  
+  .bg-slate-100 {
+    background-color: var(--slate-100);
+  }
+  
+  .bg-slate-200 {
+    background-color: var(--slate-200);
+  }
+  
+  .text-slate-400 {
+    color: var(--slate-400);
+  }
+  
+  .text-slate-500 {
+    color: var(--slate-500);
+  }
+  
+  .text-slate-600 {
+    color: var(--slate-600);
+  }
+  
+  .text-slate-700 {
+    color: var(--slate-700);
+  }
+  
+  .text-slate-900 {
+    color: var(--slate-900);
+  }
+  
+  .border-slate-200 {
+    border-color: var(--slate-200);
+  }
+  
+  .border-slate-100 {
+    border-color: var(--slate-100);
+  }
+  
+  .bg-emerald-50 {
+    background-color: var(--emerald-50);
+  }
+  
+  .bg-emerald-100 {
+    background-color: var(--emerald-100);
+  }
+  
+  .text-emerald-700 {
+    color: var(--emerald-700);
+  }
+  
+  .border-emerald-100 {
+    border-color: var(--emerald-100);
+  }
+  
+  .bg-purple-50 {
+    background-color: var(--purple-50);
+  }
+  
+  .bg-purple-100 {
+    background-color: var(--purple-100);
+  }
+  
+  .text-purple-700 {
+    color: var(--purple-700);
+  }
+  
+  .border-purple-100 {
+    border-color: var(--purple-100);
+  }
+  
+  .from-emerald-500 {
+    --tw-gradient-from: var(--emerald-500);
+  }
+  
+  .to-emerald-600 {
+    --tw-gradient-to: var(--emerald-600);
+  }
+  
+  .hover\:from-emerald-600:hover {
+    --tw-gradient-from: var(--emerald-600);
+  }
+  
+  .hover\:to-emerald-700:hover {
+    --tw-gradient-to: var(--emerald-700);
+  }
+  
+  .from-purple-500 {
+    --tw-gradient-from: var(--purple-500);
+  }
+  
+  .to-purple-600 {
+    --tw-gradient-to: var(--purple-600);
+  }
+  
+  .hover\:from-purple-600:hover {
+    --tw-gradient-from: var(--purple-600);
+  }
+  
+  .hover\:to-purple-700:hover {
+    --tw-gradient-to: var(--purple-700);
+  }
+  
+  .bg-success-500 {
+    background-color: var(--success-500);
+  }
+}

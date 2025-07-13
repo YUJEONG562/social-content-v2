@@ -1,0 +1,515 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SNS 콘텐츠 생성기</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        border: "hsl(214.3 31.8% 91.4%)",
+                        input: "hsl(214.3 31.8% 91.4%)",
+                        ring: "hsl(222.2 84% 4.9%)",
+                        background: "hsl(0 0% 100%)",
+                        foreground: "hsl(222.2 84% 4.9%)",
+                        primary: {
+                            DEFAULT: "hsl(222.2 47.4% 11.2%)",
+                            foreground: "hsl(210 40% 98%)",
+                        },
+                        secondary: {
+                            DEFAULT: "hsl(210 40% 96%)",
+                            foreground: "hsl(222.2 84% 4.9%)",
+                        },
+                        destructive: {
+                            DEFAULT: "hsl(0 84.2% 60.2%)",
+                            foreground: "hsl(210 40% 98%)",
+                        },
+                        muted: {
+                            DEFAULT: "hsl(210 40% 96%)",
+                            foreground: "hsl(215.4 16.3% 46.9%)",
+                        },
+                        accent: {
+                            DEFAULT: "hsl(210 40% 96%)",
+                            foreground: "hsl(222.2 84% 4.9%)",
+                        },
+                        card: {
+                            DEFAULT: "hsl(0 0% 100%)",
+                            foreground: "hsl(222.2 84% 4.9%)",
+                        },
+                    }
+                }
+            }
+        }
+    </script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/lucide/0.263.1/umd/lucide.min.css">
+    <style>
+        .tab-active {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+        }
+        .tab-profile { background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); }
+        .tab-review { background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%); }
+        .tab-info { background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%); }
+        
+        .hidden { display: none; }
+        .loading { opacity: 0.6; pointer-events: none; }
+        
+        .toast {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            background: white;
+            border: 1px solid #e5e7eb;
+            border-radius: 8px;
+            padding: 16px;
+            box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
+            z-index: 1000;
+            opacity: 0;
+            transform: translateX(100%);
+            transition: all 0.3s ease;
+        }
+        
+        .toast.show {
+            opacity: 1;
+            transform: translateX(0);
+        }
+        
+        .toast.error {
+            border-color: #ef4444;
+            background: #fef2f2;
+        }
+        
+        .toast.success {
+            border-color: #10b981;
+            background: #f0fdf4;
+        }
+    </style>
+</head>
+<body class="bg-gray-50">
+    <div class="min-h-screen">
+        <!-- Header -->
+        <header class="bg-white shadow-sm border-b">
+            <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+                <div class="flex items-center justify-between h-16">
+                    <div class="flex items-center">
+                        <div class="flex-shrink-0">
+                            <h1 class="text-2xl font-bold text-gray-900">SNS 콘텐츠 생성기</h1>
+                        </div>
+                    </div>
+                    <div class="text-sm text-gray-500">
+                        AI로 만드는 한국형 SNS 콘텐츠
+                    </div>
+                </div>
+            </div>
+        </header>
+
+        <main class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+            <!-- 오프라인 경고 -->
+            <div id="offline-warning" class="mb-6 bg-red-50 border border-red-200 rounded-lg p-4 hidden">
+                <div class="flex items-center">
+                    <svg class="h-5 w-5 text-red-600 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-2.694-.833-3.464 0L3.35 16.5c-.77.833.192 2.5 1.732 2.5z"></path>
+                    </svg>
+                    <span class="text-red-800 font-medium">인터넷 연결이 끊어졌습니다</span>
+                    <span class="text-red-600 ml-2">연결을 확인한 후 다시 시도해주세요.</span>
+                </div>
+            </div>
+
+            <!-- 사용량 상태 -->
+            <div id="usage-status" class="mb-6 hidden">
+                <div class="bg-white p-4 rounded-lg shadow-sm border">
+                    <div class="flex items-center justify-between mb-2">
+                        <span class="text-sm font-medium text-gray-700">오늘 사용량</span>
+                        <span id="usage-text" class="text-sm text-gray-500">0/10</span>
+                    </div>
+                    <div class="w-full bg-gray-200 rounded-full h-2">
+                        <div id="usage-bar" class="bg-blue-500 h-2 rounded-full" style="width: 0%"></div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 탭 네비게이션 -->
+            <div class="mb-8">
+                <div class="flex space-x-1 bg-gray-100 p-1 rounded-lg">
+                    <button onclick="switchTab('profile')" id="tab-profile" class="flex-1 flex items-center justify-center px-4 py-3 rounded-md text-sm font-medium transition-all duration-200 tab-active">
+                        <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"></path>
+                        </svg>
+                        프로필
+                    </button>
+                    <button onclick="switchTab('review')" id="tab-review" class="flex-1 flex items-center justify-center px-4 py-3 rounded-md text-sm font-medium transition-all duration-200 text-gray-600 hover:text-gray-900">
+                        <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11.049 2.927c.3-.921 1.603-.921 1.902 0l1.519 4.674a1 1 0 00.95.69h4.915c.969 0 1.371 1.24.588 1.81l-3.976 2.888a1 1 0 00-.363 1.118l1.518 4.674c.3.922-.755 1.688-1.538 1.118l-3.976-2.888a1 1 0 00-1.176 0l-3.976 2.888c-.783.57-1.838-.197-1.538-1.118l1.518-4.674a1 1 0 00-.363-1.118l-3.976-2.888c-.784-.57-.38-1.81.588-1.81h4.914a1 1 0 00.951-.69l1.519-4.674z"></path>
+                        </svg>
+                        리뷰
+                    </button>
+                    <button onclick="switchTab('info')" id="tab-info" class="flex-1 flex items-center justify-center px-4 py-3 rounded-md text-sm font-medium transition-all duration-200 text-gray-600 hover:text-gray-900">
+                        <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                        </svg>
+                        정보
+                    </button>
+                </div>
+            </div>
+
+            <!-- 콘텐츠 영역 -->
+            <div class="grid lg:grid-cols-2 gap-8">
+                <!-- 입력 영역 -->
+                <div class="space-y-6">
+                    <!-- 프로필 탭 -->
+                    <div id="content-profile" class="tab-content">
+                        <div class="bg-white p-6 rounded-lg shadow-sm border">
+                            <h3 class="text-lg font-semibold mb-4 text-gray-900">프로필 소개글 생성</h3>
+                            <div class="space-y-4">
+                                <div>
+                                    <label class="block text-sm font-medium text-gray-700 mb-2">주제 입력</label>
+                                    <textarea id="profile-topic" rows="3" class="w-full p-3 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent" placeholder="예: AI 영상 제작 크리에이터"></textarea>
+                                </div>
+                                <div class="flex gap-2">
+                                    <button onclick="generateTopics('profile')" id="profile-topics-btn" class="flex-1 px-4 py-2 border border-gray-300 rounded-md text-sm font-medium text-gray-700 hover:bg-gray-50">
+                                        <svg class="w-4 h-4 mr-2 inline" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z"></path>
+                                        </svg>
+                                        주제 아이디어
+                                    </button>
+                                    <button onclick="generateContent('profile')" id="profile-generate-btn" class="flex-1 py-3 rounded-xl text-white font-semibold transition-all duration-200 tab-profile">
+                                        프로필 생성
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- 리뷰 탭 -->
+                    <div id="content-review" class="tab-content hidden">
+                        <div class="bg-white p-6 rounded-lg shadow-sm border">
+                            <h3 class="text-lg font-semibold mb-4 text-gray-900">리뷰 콘텐츠 생성</h3>
+                            <div class="space-y-4">
+                                <div>
+                                    <label class="block text-sm font-medium text-gray-700 mb-2">주제 입력</label>
+                                    <textarea id="review-topic" rows="3" class="w-full p-3 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent" placeholder="예: 새로 나온 무선 이어폰"></textarea>
+                                </div>
+                                <div>
+                                    <label class="block text-sm font-medium text-gray-700 mb-2">말투 선택</label>
+                                    <select id="review-tone" class="w-full p-3 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent">
+                                        <option value="formal">정중한 말투 (존댓말)</option>
+                                        <option value="casual">친근한 말투 (반말)</option>
+                                    </select>
+                                </div>
+                                <div class="flex gap-2">
+                                    <button onclick="generateTopics('review')" id="review-topics-btn" class="flex-1 px-4 py-2 border border-gray-300 rounded-md text-sm font-medium text-gray-700 hover:bg-gray-50">
+                                        <svg class="w-4 h-4 mr-2 inline" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z"></path>
+                                        </svg>
+                                        주제 아이디어
+                                    </button>
+                                    <button onclick="generateContent('review')" id="review-generate-btn" class="flex-1 py-3 rounded-xl text-white font-semibold transition-all duration-200 tab-review">
+                                        리뷰 생성
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- 정보 탭 -->
+                    <div id="content-info" class="tab-content hidden">
+                        <div class="bg-white p-6 rounded-lg shadow-sm border">
+                            <h3 class="text-lg font-semibold mb-4 text-gray-900">정보 콘텐츠 생성</h3>
+                            <div class="space-y-4">
+                                <div>
+                                    <label class="block text-sm font-medium text-gray-700 mb-2">주제 입력</label>
+                                    <textarea id="info-topic" rows="3" class="w-full p-3 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent" placeholder="예: 스마트폰 배터리 수명 늘리는 방법"></textarea>
+                                </div>
+                                <div>
+                                    <label class="block text-sm font-medium text-gray-700 mb-2">말투 선택</label>
+                                    <select id="info-tone" class="w-full p-3 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent">
+                                        <option value="formal">정중한 말투 (존댓말)</option>
+                                        <option value="casual">친근한 말투 (반말)</option>
+                                    </select>
+                                </div>
+                                <div class="flex gap-2">
+                                    <button onclick="generateTopics('info')" id="info-topics-btn" class="flex-1 px-4 py-2 border border-gray-300 rounded-md text-sm font-medium text-gray-700 hover:bg-gray-50">
+                                        <svg class="w-4 h-4 mr-2 inline" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z"></path>
+                                        </svg>
+                                        주제 아이디어
+                                    </button>
+                                    <button onclick="generateContent('info')" id="info-generate-btn" class="flex-1 py-3 rounded-xl text-white font-semibold transition-all duration-200 tab-info">
+                                        정보 생성
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 결과 영역 -->
+                <div class="space-y-6">
+                    <div class="bg-white p-6 rounded-lg shadow-sm border">
+                        <div class="flex items-center justify-between mb-4">
+                            <h3 class="text-lg font-semibold text-gray-900">생성된 콘텐츠</h3>
+                            <div class="flex gap-2">
+                                <button onclick="copyContent()" id="copy-btn" class="px-3 py-1 text-sm border border-gray-300 rounded-md text-gray-600 hover:bg-gray-50 hidden">
+                                    <svg class="w-4 h-4 mr-1 inline" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z"></path>
+                                    </svg>
+                                    복사
+                                </button>
+                                <button onclick="shareContent()" id="share-btn" class="px-3 py-1 text-sm border border-gray-300 rounded-md text-gray-600 hover:bg-gray-50 hidden">
+                                    <svg class="w-4 h-4 mr-1 inline" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8.684 13.342C8.886 12.938 9 12.482 9 12c0-.482-.114-.938-.316-1.342m0 2.684a3 3 0 110-2.684m0 2.684l6.632 3.316m-6.632-6l6.632-3.316m0 0a3 3 0 105.367-2.684 3 3 0 00-5.367 2.684zm0 9.316a3 3 0 105.367 2.684 3 3 0 00-5.367-2.684z"></path>
+                                    </svg>
+                                    공유
+                                </button>
+                            </div>
+                        </div>
+                        <div id="content-result" class="bg-gray-50 p-4 rounded-lg min-h-[200px] flex items-center justify-center text-gray-500">
+                            생성할 주제를 입력하고 버튼을 클릭해주세요
+                        </div>
+                    </div>
+
+                    <!-- 주제 제안 영역 -->
+                    <div id="topics-result" class="bg-white p-6 rounded-lg shadow-sm border hidden">
+                        <h4 class="text-md font-semibold text-gray-900 mb-3">추천 주제</h4>
+                        <div id="topics-list" class="space-y-2"></div>
+                    </div>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <!-- Toast 알림 -->
+    <div id="toast" class="toast">
+        <div id="toast-content"></div>
+    </div>
+
+    <script>
+        let currentTab = 'profile';
+        let currentContent = '';
+        let currentContentId = null;
+        let isOnline = navigator.onLine;
+
+        // 온라인/오프라인 상태 감지
+        window.addEventListener('online', () => {
+            isOnline = true;
+            document.getElementById('offline-warning').classList.add('hidden');
+        });
+
+        window.addEventListener('offline', () => {
+            isOnline = false;
+            document.getElementById('offline-warning').classList.remove('hidden');
+        });
+
+        // 초기 오프라인 상태 확인
+        if (!isOnline) {
+            document.getElementById('offline-warning').classList.remove('hidden');
+        }
+
+        // 탭 전환
+        function switchTab(tab) {
+            currentTab = tab;
+            
+            // 모든 탭 버튼 초기화
+            document.querySelectorAll('[id^="tab-"]').forEach(btn => {
+                btn.classList.remove('tab-active', 'text-white');
+                btn.classList.add('text-gray-600', 'hover:text-gray-900');
+            });
+            
+            // 활성 탭 스타일 적용
+            const activeBtn = document.getElementById(`tab-${tab}`);
+            activeBtn.classList.add('tab-active', 'text-white');
+            activeBtn.classList.remove('text-gray-600', 'hover:text-gray-900');
+            
+            // 모든 콘텐츠 숨기기
+            document.querySelectorAll('.tab-content').forEach(content => {
+                content.classList.add('hidden');
+            });
+            
+            // 활성 콘텐츠 보이기
+            document.getElementById(`content-${tab}`).classList.remove('hidden');
+        }
+
+        // 토스트 메시지
+        function showToast(message, type = 'success') {
+            const toast = document.getElementById('toast');
+            const content = document.getElementById('toast-content');
+            
+            content.textContent = message;
+            toast.className = `toast ${type}`;
+            toast.classList.add('show');
+            
+            setTimeout(() => {
+                toast.classList.remove('show');
+            }, 3000);
+        }
+
+        // API 호출 함수
+        async function callAPI(endpoint, data) {
+            try {
+                const response = await fetch(endpoint, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify(data)
+                });
+
+                if (!response.ok) {
+                    throw new Error(`HTTP error! status: ${response.status}`);
+                }
+
+                return await response.json();
+            } catch (error) {
+                console.error('API call failed:', error);
+                throw error;
+            }
+        }
+
+        // 콘텐츠 생성
+        async function generateContent(type) {
+            if (!isOnline) {
+                showToast('인터넷 연결을 확인해주세요', 'error');
+                return;
+            }
+
+            const topicElement = document.getElementById(`${type}-topic`);
+            const topic = topicElement.value.trim();
+            
+            if (!topic) {
+                showToast('주제를 입력해주세요', 'error');
+                return;
+            }
+
+            const generateBtn = document.getElementById(`${type}-generate-btn`);
+            const originalText = generateBtn.textContent;
+            
+            // 로딩 상태
+            generateBtn.textContent = '생성 중...';
+            generateBtn.disabled = true;
+            generateBtn.classList.add('loading');
+
+            try {
+                const requestData = {
+                    topic: topic,
+                    contentType: type
+                };
+
+                // 리뷰, 정보 타입의 경우 톤 추가
+                if (type === 'review' || type === 'info') {
+                    const toneElement = document.getElementById(`${type}-tone`);
+                    requestData.tone = toneElement.value;
+                }
+
+                // Netlify Functions 엔드포인트 호출
+                const response = await callAPI('/.netlify/functions/generate-content', requestData);
+                
+                currentContent = response.content;
+                currentContentId = response.id;
+                
+                // 결과 표시
+                document.getElementById('content-result').innerHTML = currentContent.replace(/\n/g, '<br>');
+                document.getElementById('copy-btn').classList.remove('hidden');
+                document.getElementById('share-btn').classList.remove('hidden');
+                
+                showToast('콘텐츠가 생성되었습니다!');
+                
+            } catch (error) {
+                console.error('Generation error:', error);
+                
+                let errorMessage = '콘텐츠 생성 중 오류가 발생했습니다.';
+                if (error.message.includes('OpenAI')) {
+                    errorMessage = '현재 AI 서비스가 일시적으로 중단되었습니다. 잠시 후 다시 시도해주세요.';
+                }
+                
+                showToast(errorMessage, 'error');
+            } finally {
+                generateBtn.textContent = originalText;
+                generateBtn.disabled = false;
+                generateBtn.classList.remove('loading');
+            }
+        }
+
+        // 주제 생성
+        async function generateTopics(type) {
+            if (!isOnline) {
+                showToast('인터넷 연결을 확인해주세요', 'error');
+                return;
+            }
+
+            const topicsBtn = document.getElementById(`${type}-topics-btn`);
+            const originalText = topicsBtn.textContent;
+            
+            // 로딩 상태
+            topicsBtn.textContent = '생성 중...';
+            topicsBtn.disabled = true;
+            topicsBtn.classList.add('loading');
+
+            try {
+                const response = await callAPI('/.netlify/functions/generate-topics', {
+                    contentType: type
+                });
+                
+                // 주제 목록 표시
+                const topicsResult = document.getElementById('topics-result');
+                const topicsList = document.getElementById('topics-list');
+                
+                topicsList.innerHTML = '';
+                response.topics.forEach(topic => {
+                    const topicElement = document.createElement('div');
+                    topicElement.className = 'p-2 bg-gray-50 rounded cursor-pointer hover:bg-gray-100 transition-colors';
+                    topicElement.textContent = topic;
+                    topicElement.onclick = () => {
+                        document.getElementById(`${type}-topic`).value = topic;
+                        topicsResult.classList.add('hidden');
+                    };
+                    topicsList.appendChild(topicElement);
+                });
+                
+                topicsResult.classList.remove('hidden');
+                showToast('주제 아이디어가 생성되었습니다!');
+                
+            } catch (error) {
+                console.error('Topics generation error:', error);
+                showToast('주제 생성 중 오류가 발생했습니다.', 'error');
+            } finally {
+                topicsBtn.textContent = originalText;
+                topicsBtn.disabled = false;
+                topicsBtn.classList.remove('loading');
+            }
+        }
+
+        // 콘텐츠 복사
+        function copyContent() {
+            if (!currentContent) return;
+            
+            navigator.clipboard.writeText(currentContent).then(() => {
+                showToast('클립보드에 복사되었습니다!');
+            }).catch(() => {
+                showToast('복사에 실패했습니다.', 'error');
+            });
+        }
+
+        // 콘텐츠 공유
+        function shareContent() {
+            if (!currentContent) return;
+            
+            if (navigator.share) {
+                navigator.share({
+                    title: 'SNS 콘텐츠',
+                    text: currentContent
+                });
+            } else {
+                copyContent();
+            }
+        }
+
+        // 초기화
+        document.addEventListener('DOMContentLoaded', () => {
+            switchTab('profile');
+        });
+    </script>
+</body>
+</html>
