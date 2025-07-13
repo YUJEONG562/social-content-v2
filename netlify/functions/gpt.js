@@ -1,41 +1,33 @@
-const fetch = (...args) => import('node-fetch').then(({ default: fetch }) => fetch(...args));
+// netlify/functions/gpt.js
+const fetch = require("node-fetch");
 
-export default async (request) => {
-  let body;
+exports.handler = async (event) => {
   try {
-    body = JSON.parse(request.body || '{}');
-  } catch {
-    return new Response(
-      JSON.stringify({ error: 'Invalid JSON body' }),
-      { status: 400, headers: { 'Content-Type': 'application/json' } }
-    );
+    const { messages } = JSON.parse(event.body);
+    const apiKey = process.env.thread_api_key;
+
+    const res = await fetch("https://api.openai.com/v1/chat/completions", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${apiKey}`,
+      },
+      body: JSON.stringify({
+        model: "gpt-3.5-turbo",
+        messages,
+      }),
+    });
+
+    const data = await res.json();
+
+    return {
+      statusCode: 200,
+      body: JSON.stringify(data),
+    };
+  } catch (err) {
+    return {
+      statusCode: 500,
+      body: JSON.stringify({ error: err.message }),
+    };
   }
-
-  if (!body.messages) {
-    return new Response(
-      JSON.stringify({ error: 'Missing "messages" in request body' }),
-      { status: 400, headers: { 'Content-Type': 'application/json' } }
-    );
-  }
-
-  const apiKey = process.env.thread_api_key;
-
-  const res = await fetch('https://api.openai.com/v1/chat/completions', {
-    method: 'POST',
-    headers: {
-      Authorization: `Bearer ${apiKey}`,
-      'Content-Type': 'application/json'
-    },
-    body: JSON.stringify({
-      model: 'gpt-3.5-turbo',
-      messages: body.messages
-    })
-  });
-
-  const data = await res.json();
-
-  return new Response(
-    JSON.stringify(data),
-    { status: 200, headers: { 'Content-Type': 'application/json' } }
-  );
 };
