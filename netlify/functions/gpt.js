@@ -1,9 +1,24 @@
 const fetch = (...args) => import('node-fetch').then(({ default: fetch }) => fetch(...args));
 
 export default async (event, context) => {
-  const body = JSON.parse(event.body);
-  const messages = body.messages;
+  let body;
+  try {
+    body = JSON.parse(event.body);
+  } catch (err) {
+    return {
+      statusCode: 400,
+      body: JSON.stringify({ error: 'Invalid JSON body' })
+    };
+  }
 
+  if (!body || !body.messages) {
+    return {
+      statusCode: 400,
+      body: JSON.stringify({ error: 'Missing "messages" in request body' })
+    };
+  }
+
+  const messages = body.messages;
   const apiKey = process.env.thread_api_key;
 
   const res = await fetch("https://api.openai.com/v1/chat/completions", {
