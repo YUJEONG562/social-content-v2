@@ -1,26 +1,27 @@
-const fetch = require("node-fetch");
+const fetch = (...args) => import('node-fetch').then(({ default: fetch }) => fetch(...args));
 
-exports.handler = async function (event) {
-  const body = JSON.parse(event.body || "{}");
+export default async (event, context) => {
+  const body = JSON.parse(event.body);
+  const messages = body.messages;
 
-  const apiKey = process.env.thread_api_key; // ← 정확히 위에서 설정한 이름과 일치해야 함
+  const apiKey = process.env.thread_api_key;
 
-  const response = await fetch("https://api.openai.com/v1/chat/completions", {
+  const res = await fetch("https://api.openai.com/v1/chat/completions", {
     method: "POST",
     headers: {
       Authorization: `Bearer ${apiKey}`,
-      "Content-Type": "application/json",
+      "Content-Type": "application/json"
     },
     body: JSON.stringify({
       model: "gpt-3.5-turbo",
-      messages: body.messages || [{ role: "user", content: "안녕 GPT?" }],
-    }),
+      messages
+    })
   });
 
-  const data = await response.json();
+  const data = await res.json();
 
   return {
     statusCode: 200,
-    body: JSON.stringify(data),
+    body: JSON.stringify(data)
   };
 };
